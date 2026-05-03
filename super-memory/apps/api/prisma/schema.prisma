@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  email             String             @unique
+  passwordHash      String             @map("password_hash")
+  status            String             @default("active")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  projects          Project[]
+  clients           Client[]
+  repos             Repo[]
+  memories          Memory[]
+  apiKeys           ApiKey[]
+  mcpAuditLogs      McpAuditLog[]
+  scanResults       ScanResult[]
+  memoryReviewItems MemoryReviewItem[]
+  memoryRelations   MemoryRelation[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  name        String
+  description String?
+  slug        String
+  status      String       @default("active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repos       Repo[]
+  memories    Memory[]
+  scanResults ScanResult[]
+
+  @@unique([userId, slug])
+  @@map("projects")
+}
+
+model Client {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memories    Memory[]
+
+  @@map("clients")
+}
+
+model Repo {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  projectId     String?      @map("project_id") @db.Uuid
+  name          String
+  localPath     String?      @map("local_path")
+  remoteUrl     String?      @map("remote_url")
+  defaultBranch String?      @map("default_branch")
+  status        String       @default("active")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  memories      Memory[]
+  scanResults   ScanResult[]
+
+  @@map("repos")
+}
+
+model Memory {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String             @map("user_id") @db.Uuid
+  projectId       String?            @map("project_id") @db.Uuid
+  clientId        String?            @map("client_id") @db.Uuid
+  repoId          String?            @map("repo_id") @db.Uuid
+  scope           String
+  title           String
+  content         String
+  tags            String[]           @default([])
+  source          String             @default("manual")
+  status          String             @default("active")
+  importance      Int                @default(3)
+  confidence      Decimal            @default(1.0) @db.Decimal(4, 2)
+  embedding       Unsupported("vector(1536)")?
+  metadata        Json               @default("{}")
+  expiresAt       DateTime?          @map("expires_at") @db.Timestamptz(6)
+  qualityScore    Decimal            @default(0.50) @map("quality_score") @db.Decimal(4, 2)
+  freshnessScore  Decimal            @default(1.00) @map("freshness_score") @db.Decimal(4, 2)
+  usageCount      Int                @default(0) @map("usage_count")
+  lastUsedAt      DateTime?          @map("last_used_at") @db.Timestamptz(6)
+  lastReviewedAt  DateTime?          @map("last_reviewed_at") @db.Timestamptz(6)
+  supersededBy    String?            @map("superseded_by") @db.Uuid
+  version         Int                @default(1)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client          Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  repo            Repo?              @relation(fields: [repoId], references: [id], onDelete: SetNull)
+  reviewItems     MemoryReviewItem[] @relation("PrimaryMemory")
+  relationsFrom   MemoryRelation[]   @relation("SourceMemory")
+  relationsTo     MemoryRelation[]   @relation("TargetMemory")
+
+  @@map("memories")
+}
+
+model ApiKey {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  name        String
+  prefix      String
+  keyHash     String       @map("key_hash")
+  lastUsedAt  DateTime?    @map("last_used_at") @db.Timestamptz(6)
+  revokedAt   DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcpAuditLogs McpAuditLog[]
+
+  @@map("api_keys")
+}
+
+model McpAuditLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  apiKeyId      String?  @map("api_key_id") @db.Uuid
+  toolName      String   @map("tool_name")
+  input         Json     @default("{}")
+  outputSummary String?  @map("output_summary")
+  status        String
+  errorMessage  String?  @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey        ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@map("mcp_audit_logs")
+}
+
+model ScanResult {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  projectId         String?  @map("project_id") @db.Uuid
+  repoId            String?  @map("repo_id") @db.Uuid
+  repoPath          String?  @map("repo_path")
+  remoteUrl         String?  @map("remote_url")
+  commitSha         String?  @map("commit_sha")
+  branchName        String?  @map("branch_name")
+  detectedStack     Json     @default("{}") @map("detected_stack")
+  generatedMemories Json     @default("[]") @map("generated_memories")
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  repo              Repo?    @relation(fields: [repoId], references: [id], onDelete: SetNull)
+
+  @@map("scan_results")
+}
+
+model MemoryReviewItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  type             String
+  status           String    @default("pending")
+  primaryMemoryId  String?   @map("primary_memory_id") @db.Uuid
+  relatedMemoryIds String[]  @default([]) @map("related_memory_ids") @db.Uuid
+  title            String
+  description      String
+  suggestedAction  String    @map("suggested_action")
+  availableActions String[]  @default([]) @map("available_actions")
+  confidence       Decimal   @default(0.00) @db.Decimal(4, 2)
+  severity         String    @default("medium")
+  metadata         Json      @default("{}")
+  resolvedAction   String?   @map("resolved_action")
+  resolvedAt       DateTime? @map("resolved_at") @db.Timestamptz(6)
+  resolvedBy       String?   @map("resolved_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryMemory    Memory?   @relation("PrimaryMemory", fields: [primaryMemoryId], references: [id], onDelete: Cascade)
+
+  @@map("memory_review_items")
+}
+
+model MemoryRelation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  sourceMemoryId String   @map("source_memory_id") @db.Uuid
+  targetMemoryId String   @map("target_memory_id") @db.Uuid
+  relationType   String   @map("relation_type")
+  confidence     Decimal  @default(0.00) @db.Decimal(4, 2)
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMemory   Memory   @relation("SourceMemory", fields: [sourceMemoryId], references: [id], onDelete: Cascade)
+  targetMemory   Memory   @relation("TargetMemory", fields: [targetMemoryId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceMemoryId, targetMemoryId, relationType])
+  @@map("memory_relations")
+}

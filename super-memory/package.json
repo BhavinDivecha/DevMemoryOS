@@ -1,0 +1,20 @@
+{
+  "name": "super-memory",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @super-memory/api\" \"npm run dev -w @super-memory/web\"",
+    "build": "npm run build -ws",
+    "lint": "npm run lint -ws",
+    "db:generate": "npm run db:generate -w @super-memory/api",
+    "db:migrate": "npm run db:migrate -w @super-memory/api",
+    "db:seed": "npm run db:seed -w @super-memory/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

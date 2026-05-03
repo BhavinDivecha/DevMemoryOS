@@ -1,0 +1,14 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../lib/api";
+export function ScansPage() {
+    const qc = useQueryClient();
+    const scans = useQuery({ queryKey: ["scan-results"], queryFn: async () => (await api.get("/scan-results")).data.data });
+    return (_jsxs("div", { className: "space-y-4", children: [_jsxs("div", { children: [_jsx("h1", { className: "page-title", children: "Scan Results" }), _jsx("p", { className: "page-subtitle", children: "Review generated memories before applying them to active memory storage." })] }), _jsxs("div", { className: "space-y-3", children: [scans.data?.map((scan) => (_jsxs("div", { className: "card card-pad", children: [_jsxs("div", { className: "flex flex-wrap justify-between gap-2 mb-2", children: [_jsxs("div", { children: [_jsx("h2", { className: "font-semibold", children: scan.repo?.name || scan.repoPath || "Unknown Repo" }), _jsxs("p", { className: "text-xs text-slate-500", children: [scan.branchName || "-", " ", scan.commitSha ? `• ${String(scan.commitSha).slice(0, 8)}` : ""] })] }), _jsx("span", { className: "badge bg-slate-100 text-slate-700", children: scan.status })] }), _jsxs("div", { className: "text-xs text-slate-600 mb-3", children: ["Detected stack: ", JSON.stringify(scan.detectedStack || {})] }), _jsxs("div", { className: "space-y-2 mb-3", children: [(scan.generatedMemories || []).slice(0, 6).map((m, idx) => (_jsxs("div", { className: "rounded-lg border border-slate-200 p-2", children: [_jsx("p", { className: "font-medium text-sm", children: m.title }), _jsx("p", { className: "text-xs text-slate-600 mt-1 line-clamp-2", children: m.content })] }, idx))), (scan.generatedMemories || []).length > 6 && _jsxs("p", { className: "text-xs text-slate-500", children: ["+ ", (scan.generatedMemories || []).length - 6, " more memories"] })] }), _jsxs("div", { className: "flex flex-wrap gap-2", children: [_jsx("button", { className: "btn-primary", onClick: async () => {
+                                            await api.post(`/scan-results/${scan.id}/apply`, {});
+                                            qc.invalidateQueries({ queryKey: ["scan-results"] });
+                                        }, children: "Apply all" }), _jsx("button", { className: "btn-secondary text-red-700 border-red-300", onClick: async () => {
+                                            await api.delete(`/scan-results/${scan.id}`);
+                                            qc.invalidateQueries({ queryKey: ["scan-results"] });
+                                        }, children: "Reject / Archive" })] })] }, scan.id))), !scans.data?.length && _jsx("div", { className: "card card-pad text-sm text-slate-500", children: "No scan results yet." })] })] }));
+}

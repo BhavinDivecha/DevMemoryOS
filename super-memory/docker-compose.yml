@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: super-memory-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: supermemory
+      POSTGRES_PASSWORD: supermemory
+      POSTGRES_DB: supermemory
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: super-memory-redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: super-memory-api
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: super-memory-web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    env_file:
+      - .env
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: apps/mcp-server/Dockerfile
+    container_name: super-memory-mcp-server
+    depends_on:
+      - api
+    env_file:
+      - .env
+    profiles:
+      - mcp
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: super-memory-worker
+    depends_on:
+      - api
+      - redis
+    env_file:
+      - .env
+    profiles:
+      - worker
+
+volumes:
+  postgres_data:
