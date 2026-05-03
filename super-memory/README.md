@@ -708,10 +708,8 @@ Potential paid features:
 ## 25) Support Links
 
 If Super Memory helps your workflow, support development:
-- Patreon: https://www.patreon.com/
-- Buy Me a Coffee: https://buymeacoffee.com/
+- Patreon: [Patreon link](https://patreon.com/bhavindivecha)
 
-Replace with your real creator links.
 
 ---
 

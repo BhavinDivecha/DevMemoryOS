@@ -218,10 +218,7 @@ super-memory/
 ## Support This Project
 If Super Memory helps you, support development:
 
-- Patreon: [Add your Patreon link](https://www.patreon.com/)
-- Buy Me a Coffee: [Add your BMC link](https://buymeacoffee.com/)
-
-Tip: replace these placeholder links with your real creator pages.
+- Patreon: [Patreon link](https://patreon.com/bhavindivecha)
 
 ## License
 Choose and add a license file (MIT/Apache-2.0 recommended for OSS).
