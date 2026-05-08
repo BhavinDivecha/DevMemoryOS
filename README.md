@@ -219,6 +219,3 @@ super-memory/
 If Super Memory helps you, support development:
 
 - Patreon: [Patreon link](https://patreon.com/bhavindivecha)
-
-## License
-Choose and add a license file (MIT/Apache-2.0 recommended for OSS).
